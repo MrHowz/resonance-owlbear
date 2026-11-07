@@ -4,7 +4,7 @@
   "build": "passed: TypeScript and Vite production build",
   "unitTests": { "passed": 30, "failed": 0, "files": 5 },
   "browserTests": {
-    "passed": 2,
+    "passed": 6,
     "failed": 0,
     "runtime": "installed Google Chrome on Windows",
     "covers": [
@@ -15,7 +15,12 @@
       "GM and late-joining listener",
       "role spoof rejection",
       "personal volume isolation",
-      "playback and crossfade cleanup after action iframe removal"
+      "playback and crossfade cleanup after action iframe removal",
+      "frame-driven progress without room writes or library DOM updates",
+      "local drag preview and single seek on release outside the rail",
+      "delayed acknowledgement without slider rollback",
+      "keyboard seek, held keys, Escape and track reset",
+      "touch drag and touch cancellation"
     ]
   },
   "format": "passed: Prettier",

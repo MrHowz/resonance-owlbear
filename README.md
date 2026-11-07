@@ -19,6 +19,7 @@ npm run dev
 
 - เพลงหลักและ ambience แยกกัน เล่นวน พัก หยุด และปรับระดับส่วนกลาง
 - Crossfade 0–10 วินาทีระหว่างเพลง และเมื่อเรียก scene
+- แถบเวลาเดินตามเฟรมหน้าจอ ลากดูตำแหน่งได้ทันทีและเลื่อนเพลงเมื่อปล่อย รองรับ touch และปุ่มลูกศรโดยไม่ส่ง metadata ทุกเฟรม
 - คิวเพลง 20 รายการ เล่นต่อเมื่อเพลงจบ การเพิ่มคิวจะปิด repeat ของเพลงปัจจุบัน
 - Soundboard แบบ one-shot พร้อมปุ่มลัด 1–8 และเสียงซ้อนพร้อมกันสูงสุด 4 เสียง
 - บันทึก scene ที่ประกอบด้วยเพลง ambience และระดับเสียงทั้งสองชั้น
@@ -67,7 +68,7 @@ npm run format:check
 npm run measure
 ```
 
-ชุดตรวจประกอบด้วย TypeScript + production build, 30 unit tests และ 2 browser scenarios ที่ทดสอบหลายขั้นตอน โดยใช้ Chrome ที่ติดตั้งอยู่บน Windows หรือกำหนด `PLAYWRIGHT_CHROMIUM_EXECUTABLE` สำหรับเครื่องอื่น หากไม่มี system Chrome ใช้ `npx playwright install chromium`
+ชุดตรวจประกอบด้วย TypeScript + production build, 30 unit tests และ 6 browser scenarios ที่ทดสอบหลายขั้นตอน โดยใช้ Chrome ที่ติดตั้งอยู่บน Windows หรือกำหนด `PLAYWRIGHT_CHROMIUM_EXECUTABLE` สำหรับเครื่องอื่น หากไม่มี system Chrome ใช้ `npx playwright install chromium`
 
 Browser test มี host จำลอง protocol ของ Owlbear ที่ `tests/obr-host.html` และรัน **SDK จริง** ทั้ง action/background รวม GM กับผู้เล่น ตรวจว่าเพลงเล่นต่อเมื่อถอด action iframe และ crossfade คืนทรัพยากรเดิมได้เมื่อแผงปิด ตัว simulator ไม่ถูกรวมใน `dist/` และไม่ใช่หลักฐานการทดสอบ backend ของ Owlbear จริง
 

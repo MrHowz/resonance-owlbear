@@ -37,7 +37,9 @@ UI รับสถานะอุปกรณ์ด้วย LOCAL broadcast จ
 
 TrackRef มีเพียง id, title และ URL ไม่ส่งแท็กหรือข้อมูลเสียง จำกัด snapshot ของโครงการที่ 12,000 bytes และ queue 20 รายการ เพราะ room metadata ของ SDK รวมทั้งห้องต้องน้อยกว่า 16KB หากส่วนขยายอื่นใช้พื้นที่จนเต็ม SDK อาจปฏิเสธ write ได้ และ UI จะแสดง error
 
-เขียน metadata เมื่อมีคำสั่งเปลี่ยน state เท่านั้น ไม่ส่ง progress เป็น heartbeat ปุ่มลาก seek / room gain ใน UI จะรวมค่าล่าสุดด้วย debounce 120ms เพื่อไม่สะสมคำสั่งทุก pointer event การแก้สถานะใน service ถูกเรียงลำดับด้วย promise chain ที่ฟื้นจาก error ของคำสั่งก่อนหน้าได้
+เขียน metadata เมื่อมีคำสั่งเปลี่ยน state เท่านั้น ไม่ส่ง progress เป็น heartbeat ปุ่ม room gain ใน UI จะรวมค่าล่าสุดด้วย debounce 120ms ส่วนแถบ seek จะ preview ในเครื่องขณะลาก และส่งคำสั่งครั้งเดียวเมื่อปล่อยเมาส์หรือนิ้ว การแก้สถานะใน service ถูกเรียงลำดับด้วย promise chain ที่ฟื้นจาก error ของคำสั่งก่อนหน้าได้
+
+ตั้งแต่ 1.0.1 แถบเวลาใช้ `requestAnimationFrame` วาดเฉพาะ slider/แถบสี โดยคำนวณเวลาต่อจาก anchor ด้วย monotonic clock ไม่ทำให้คลังเพลงทั้งหน้า render ตามเฟรม ระหว่างลากจะหยุด animation ของแถบและคงค่าที่ preview ไว้แม้มี status ใหม่เข้ามา หลังปล่อยจะใช้ตำแหน่งชั่วคราวจนได้รับ timeline ตอบกลับ หรือกลับไปใช้สถานะห้องหลัง 2.5 วินาทีหากคำสั่งล้มเหลว เมื่อซ่อนแท็บจะหยุดวาดและ resync ตอนกลับมา แถบนี้เป็น UI; audio background service ยังใช้ timer ที่ทำงานแยกกัน
 
 Broadcast ใช้สำหรับ command, snapshot ที่ช่วยให้ตอบสนองไว, clock probe และ one-shot effects snapshot ผ่าน broadcast ต้องมาจาก connection ของ conductor และเป็น epoch ปัจจุบัน ตัว metadata ยังคงเป็นสถานะถาวรสำหรับ late join
 
@@ -81,7 +83,7 @@ CSV รองรับ quoted fields, newline, BOM และ tags คั่น `
 
 30 unit tests ครอบคลุม timeline, drift, NTP sample, input validation, CSV/JSON, URL merge/ID collision, storage fallback, autoplay failure/retry, deck cleanup, one-shot bound, nonloop completion, GM check, serialized writes, stale revision, takeover และอายุ clock sample
 
-2 browser scenarios ใช้ Chrome จริงและ actual SDK ผ่าน test host ครอบคลุม flow คลัง/scene/queue/import/backup, mobile overflow 320/375/480px, GM กับ late-joining listener, role spoof rejection, personal volume isolation, การถอดและสร้าง action iframe ใหม่ และ crossfade ที่ปล่อย outgoing source หลัง panel ปิด
+6 browser scenarios ใช้ Chrome จริงและ actual SDK ผ่าน test host ครอบคลุม flow คลัง/scene/queue/import/backup, mobile overflow 320/375/480px, GM กับ late-joining listener, role spoof rejection, personal volume isolation, การถอดและสร้าง action iframe ใหม่ และ crossfade ที่ปล่อย outgoing source หลัง panel ปิด รวมถึงแถบเวลาเดินตามเฟรมโดยไม่เขียนห้องหรือแก้ DOM ของคลังเพลง, การลากผ่าน status refresh/ack ที่ตอบกลับช้า, ปล่อยเมาส์นอกแถบ, keyboard hold/Escape และ touch drag/cancel
 
 ยังไม่ได้ทดสอบห้อง Owlbear บน backend จริง, Safari/Firefox/iOS, network loss ยาวนาน, background suspend บนทุก OS หรือ codec ทุกชนิด ต้องทำ acceptance เหล่านี้ก่อนอ้างความพร้อมใช้งาน production ครบทุกแพลตฟอร์ม
 

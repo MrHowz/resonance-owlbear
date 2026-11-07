@@ -85,7 +85,7 @@ export function useDesk(onError: (text: string) => void) {
   }, []);
   const command = useCallback(
     (cmd: Command) => {
-      if (cmd.type === 'gain' || cmd.type === 'seek') {
+      if (cmd.type === 'gain') {
         const key = `${cmd.type}:${cmd.bus}`;
         clearTimeout(pending.current.get(key)?.timer);
         const timer = setTimeout(() => {

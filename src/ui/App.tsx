@@ -46,20 +46,12 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import {
-  DEFAULT_PREFS,
-  elapsed,
-  formatTime,
-  ref,
-  type Bus,
-  type Cue,
-  type Kind,
-  type Track,
-} from '../core/model';
+import { DEFAULT_PREFS, ref, type Bus, type Cue, type Kind, type Track } from '../core/model';
 import * as library from '../core/library';
 import { parseTrack } from '../core/validation';
 import { sampleTracks } from '../core/samples';
 import { useDesk } from './useDesk';
+import { PlaybackProgress } from './PlaybackProgress';
 
 const kindLabel = { music: 'Music', ambience: 'Ambience', sfx: 'Sound effect' };
 const KindIcon = ({ kind, size = 18 }: { kind: Kind; size?: number }) =>
@@ -238,13 +230,10 @@ export function App() {
   useEffect(() => {
     setLimit(50);
   }, [filter, query]);
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!document.hidden) setNow(Date.now());
-    }, 500);
-    return () => clearInterval(timer);
-  }, []);
+  const seekMusic = useCallback(
+    (position: number) => command({ type: 'seek', bus: 'music', position }),
+    [command],
+  );
   const play = useCallback(
     (track: Track) => {
       if (track.kind === 'sfx') command({ type: 'sfx', track: ref(track), gain: 1 });
@@ -592,29 +581,14 @@ export function App() {
                     ))}
                   </div>
                 </div>
-                <div className="seek-row">
-                  <span>
-                    {formatTime(
-                      elapsed(state.music, now + status.clockOffset, engine.music.duration),
-                    )}
-                  </span>
-                  <input
-                    aria-label="Music position"
-                    type="range"
-                    min="0"
-                    max={engine.music.duration || 1}
-                    step=".1"
-                    value={Math.min(
-                      elapsed(state.music, now + status.clockOffset, engine.music.duration),
-                      engine.music.duration || 0,
-                    )}
-                    disabled={!canControl || !engine.music.duration}
-                    onChange={(e) =>
-                      command({ type: 'seek', bus: 'music', position: Number(e.target.value) })
-                    }
-                  />
-                  <span>{formatTime(engine.music.duration)}</span>
-                </div>
+                <PlaybackProgress
+                  key={`${state.epoch}/${state.music.track?.id}/${state.music.track?.url}`}
+                  layer={state.music}
+                  duration={engine.music.duration}
+                  clockOffset={status.clockOffset}
+                  canSeek={canControl}
+                  onSeek={seekMusic}
+                />
               </div>
             </section>
             {engine.music.error && (
