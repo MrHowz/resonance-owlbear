@@ -34,12 +34,16 @@ let service: RoomService,
   sent: unknown[],
   writes: number,
   people: Person[];
+let writeGate: Promise<void> | undefined;
+let startedWrites = 0;
 function bridge(): Bridge {
   return {
     demo: false,
     self: { ...gm },
     getState: async () => structuredClone(metadata),
     setState: async (s) => {
+      startedWrites++;
+      if (writeGate) await writeGate;
       metadata = structuredClone(s);
       writes++;
       stateListener(s);
@@ -66,6 +70,8 @@ beforeEach(async () => {
   metadata = null;
   sent = [];
   writes = 0;
+  writeGate = undefined;
+  startedWrites = 0;
   people = [gm, player];
   service = new RoomService(bridge());
   await service.start();
@@ -75,6 +81,35 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('room conductor', () => {
+  it('coalesces queued room fader changes while a metadata write is slow', async () => {
+    receive({
+      connectionId: gm.connectionId,
+      data: {
+        type: 'command',
+        command: { type: 'play', bus: 'music', track, loop: true, fade: 0 },
+      },
+    });
+    await vi.waitFor(() => expect(writes).toBe(1));
+    let release!: () => void;
+    writeGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    receive({
+      connectionId: gm.connectionId,
+      data: { type: 'command', command: { type: 'gain', bus: 'music', gain: 0.05 } },
+    });
+    await vi.waitFor(() => expect(startedWrites).toBe(2));
+    for (let i = 2; i <= 20; i++) {
+      receive({
+        connectionId: gm.connectionId,
+        data: { type: 'command', command: { type: 'gain', bus: 'music', gain: i / 20 } },
+      });
+      await Promise.resolve();
+    }
+    release();
+    await vi.waitFor(() => expect((metadata as Session).music.gain).toBe(1));
+    expect(writes).toBeLessThanOrEqual(3);
+  });
   it('rejects commands from a player even when a payload claims to be GM', async () => {
     receive({
       connectionId: player.connectionId,
@@ -86,6 +121,41 @@ describe('room conductor', () => {
     });
     await new Promise((r) => setTimeout(r, 20));
     expect(writes).toBe(0);
+  });
+  it('preserves scene ordering between two batches of coalesced fader updates', async () => {
+    const dispatch = (command: unknown) =>
+      receive({ connectionId: gm.connectionId, data: { type: 'command', command } });
+    dispatch({ type: 'play', bus: 'music', track, loop: true, fade: 0 });
+    await vi.waitFor(() => expect(writes).toBe(1));
+    let release!: () => void;
+    writeGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    dispatch({ type: 'gain', bus: 'music', gain: 0.1 });
+    await vi.waitFor(() => expect(startedWrites).toBe(2));
+    dispatch({ type: 'gain', bus: 'music', gain: 0.2 });
+    await Promise.resolve();
+    dispatch({
+      type: 'cue',
+      fade: 0,
+      cue: {
+        id: 'scene',
+        name: 'Scene',
+        music: null,
+        ambience: null,
+        musicGain: 0.4,
+        ambienceGain: 0.3,
+      },
+    });
+    await Promise.resolve();
+    dispatch({ type: 'gain', bus: 'music', gain: 0.9 });
+    await Promise.resolve();
+    release();
+    await vi.waitFor(() => {
+      expect((metadata as Session).music.gain).toBe(0.9);
+      expect((metadata as Session).music.track).toBeNull();
+    });
+    expect(writes).toBe(5);
   });
   it('serializes rapid GM actions and persists only state changes', async () => {
     receive({

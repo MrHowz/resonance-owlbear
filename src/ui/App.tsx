@@ -52,6 +52,7 @@ import { parseTrack } from '../core/validation';
 import { sampleTracks } from '../core/samples';
 import { useDesk } from './useDesk';
 import { PlaybackProgress } from './PlaybackProgress';
+import { SmoothSlider } from './SmoothSlider';
 
 const kindLabel = { music: 'Music', ambience: 'Ambience', sfx: 'Sound effect' };
 const KindIcon = ({ kind, size = 18 }: { kind: Kind; size?: number }) =>
@@ -420,6 +421,13 @@ export function App() {
               <ShieldCheck size={13} />
               {isGM ? 'GAME MASTER' : bridge ? 'LISTENER' : '…'}
             </span>
+            <IconButton
+              label="Audio settings"
+              className="mobile-audio-settings"
+              onClick={() => setSettings(true)}
+            >
+              <Settings2 size={17} />
+            </IconButton>
             <IconButton label="Help" onClick={() => setHelp(true)}>
               <CircleHelp size={18} />
             </IconButton>
@@ -986,22 +994,18 @@ export function App() {
                       <KindIcon kind={bus} size={16} />
                     </span>
                     <strong>{kindLabel[bus]}</strong>
-                    <span className="gain-number">{Math.round(state[bus].gain * 100)}%</span>
                   </div>
                   <p className="bus-track">
                     {state[bus].track?.title ??
                       (bus === 'music' ? 'No music playing' : 'Add a little texture')}
                   </p>
                   <div className="bus-fader">
-                    <input
-                      aria-label={`${kindLabel[bus]} room volume`}
-                      type="range"
-                      min="0"
-                      max="1"
-                      step=".01"
+                    <SmoothSlider
+                      key={`${state.epoch}/${state[bus].track?.id}`}
+                      label={`${kindLabel[bus]} room volume`}
                       value={state[bus].gain}
                       disabled={!canControl}
-                      onChange={(e) => command({ type: 'gain', bus, gain: Number(e.target.value) })}
+                      onChange={(gain, final) => command({ type: 'gain', bus, gain }, final)}
                     />
                     <IconButton
                       label={`${state[bus].playing ? 'Pause' : 'Resume'} ${bus} layer`}
@@ -1136,20 +1140,16 @@ export function App() {
           <IconButton
             label={prefs.muted ? 'Unmute your audio' : 'Mute your audio'}
             active={prefs.muted}
-            onClick={() => preferences({ ...prefs, muted: !prefs.muted })}
+            onClick={() => preferences({ muted: !prefs.muted })}
           >
             {prefs.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </IconButton>
-          <input
-            aria-label="Personal volume"
-            type="range"
-            min="0"
-            max="1"
-            step=".01"
+          <SmoothSlider
+            className="master-slider"
+            label="Personal volume"
             value={prefs.master}
-            onChange={(e) => preferences({ ...prefs, master: Number(e.target.value) })}
+            onChange={(master, final) => preferences({ master }, final)}
           />
-          <span className="master-number">{Math.round(prefs.master * 100)}%</span>
           <div className="monitor-spacer" />
           <button className="monitor-settings" onClick={() => setSettings(true)}>
             <Settings2 size={16} />
@@ -1282,23 +1282,18 @@ export function App() {
                 <KindIcon kind={key} size={16} />
                 {kindLabel[key]}
               </span>
-              <input
-                aria-label={`Personal ${key} volume`}
-                type="range"
-                min="0"
-                max="1"
-                step=".01"
+              <SmoothSlider
+                label={`Personal ${key} volume`}
                 value={prefs[key]}
-                onChange={(e) => preferences({ ...prefs, [key]: Number(e.target.value) })}
+                onChange={(gain, final) => preferences({ [key]: gain }, final)}
               />
-              <span>{Math.round(prefs[key] * 100)}%</span>
             </label>
           ))}
           <label className="field fade-setting">
             Crossfade duration
             <select
               value={prefs.fade}
-              onChange={(e) => preferences({ ...prefs, fade: Number(e.target.value) })}
+              onChange={(e) => preferences({ fade: Number(e.target.value) })}
             >
               {[0, 1, 2.5, 5, 10].map((v) => (
                 <option value={v} key={v}>

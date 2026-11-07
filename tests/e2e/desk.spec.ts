@@ -98,6 +98,12 @@ test('actual SDK iframes: shared playback, late join, player permissions and bac
     listener.getByRole('heading', { name: 'The Amber Archive', exact: true }),
   ).toBeVisible();
   await expect(listener.getByRole('button', { name: 'Pause music', exact: true })).toBeDisabled();
+  await expect(
+    listener.getByRole('slider', { name: 'Music room volume', exact: true }),
+  ).toBeDisabled();
+  await expect(
+    listener.getByRole('slider', { name: 'Ambience room volume', exact: true }),
+  ).toBeDisabled();
   const listenerBackground = listenerPage.frame({ url: /background\.html/ })!;
   await expect
     .poll(() =>

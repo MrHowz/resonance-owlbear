@@ -2,9 +2,9 @@
   "date": "2026-11-08",
   "timezone": "Asia/Bangkok",
   "build": "passed: TypeScript and Vite production build",
-  "unitTests": { "passed": 30, "failed": 0, "files": 5 },
+  "unitTests": { "passed": 35, "failed": 0, "files": 6 },
   "browserTests": {
-    "passed": 6,
+    "passed": 9,
     "failed": 0,
     "runtime": "installed Google Chrome on Windows",
     "covers": [
@@ -20,7 +20,11 @@
       "local drag preview and single seek on release outside the rail",
       "delayed acknowledgement without slider rollback",
       "keyboard seek, held keys, Escape and track reset",
-      "touch drag and touch cancellation"
+      "touch drag and touch cancellation",
+      "live music and ambience faders with bounded command rate",
+      "independent personal sliders through delayed status responses",
+      "touch volume cancel restores the initial audible level",
+      "mobile audio settings and slider layouts"
     ]
   },
   "format": "passed: Prettier",

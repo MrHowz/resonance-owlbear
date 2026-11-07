@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createBridge, type Bridge } from '../platform/bridge';
-import { RoomService, type ServiceStatus } from '../platform/service';
+import { RoomService, validPreferences, type ServiceStatus } from '../platform/service';
 import { isRecord, validSession } from '../core/validation';
 import { DEFAULT_PREFS, emptySession, type Command, type Preferences } from '../core/model';
+import { latestThrottle } from './latestThrottle';
+type GainCommand = Extract<Command, { type: 'gain' }>;
 const emptyStatus = (): ServiceStatus => ({
   state: emptySession(),
   engine: {
@@ -23,8 +25,13 @@ export function useDesk(onError: (text: string) => void) {
   const [bridge, setBridge] = useState<Bridge | null>(null);
   const [status, setStatus] = useState(emptyStatus);
   const [connected, setConnected] = useState(false);
-  const pending = useRef(
-    new Map<string, { command: Command; timer: ReturnType<typeof setTimeout> }>(),
+  const gainWriters = useRef(new Map<string, ReturnType<typeof latestThrottle<GainCommand>>>());
+  const preferenceWriter = useRef<ReturnType<typeof latestThrottle<Preferences>> | undefined>(
+    undefined,
+  );
+  const currentPreferences = useRef<Preferences>({ ...DEFAULT_PREFS });
+  const preferenceTargets = useRef(
+    new Map<keyof Preferences, { value: number | boolean; expires: number }>(),
   );
   const send = useCallback((cmd: Command) => {
     const b = bridgeRef.current;
@@ -53,9 +60,23 @@ export function useDesk(onError: (text: string) => void) {
             if (
               e.data.type === 'status' &&
               isRecord(e.data.status) &&
-              validSession(e.data.status.state)
+              validSession(e.data.status.state) &&
+              validPreferences(e.data.status.preferences)
             ) {
-              setStatus(e.data.status as unknown as ServiceStatus);
+              const incoming = e.data.status as unknown as ServiceStatus;
+              for (const [key, target] of preferenceTargets.current) {
+                if (
+                  incoming.preferences[key] === target.value ||
+                  performance.now() > target.expires
+                )
+                  preferenceTargets.current.delete(key);
+              }
+              const overrides = Object.fromEntries(
+                [...preferenceTargets.current].map(([key, target]) => [key, target.value]),
+              );
+              const preferences = { ...incoming.preferences, ...overrides };
+              currentPreferences.current = preferences;
+              setStatus({ ...incoming, preferences });
               setConnected(true);
             }
             if (e.data.type === 'serviceError' && typeof e.data.message === 'string')
@@ -75,8 +96,8 @@ export function useDesk(onError: (text: string) => void) {
       .catch((e) => errorRef.current(`Connection failed: ${(e as Error).message}`));
     return () => {
       disposed = true;
-      for (const item of pending.current.values()) clearTimeout(item.timer);
-      pending.current.clear();
+      for (const writer of gainWriters.current.values()) writer.cancel();
+      preferenceWriter.current?.cancel();
       cleanup.forEach((f) => f());
       service?.destroy();
       owned?.destroy();
@@ -84,33 +105,38 @@ export function useDesk(onError: (text: string) => void) {
     };
   }, []);
   const command = useCallback(
-    (cmd: Command) => {
+    (cmd: Command, final = true) => {
       if (cmd.type === 'gain') {
-        const key = `${cmd.type}:${cmd.bus}`;
-        clearTimeout(pending.current.get(key)?.timer);
-        const timer = setTimeout(() => {
-          pending.current.delete(key);
-          send(cmd);
-        }, 120);
-        pending.current.set(key, { command: cmd, timer });
+        let writer = gainWriters.current.get(cmd.bus);
+        if (!writer) {
+          writer = latestThrottle<GainCommand>(send);
+          gainWriters.current.set(cmd.bus, writer);
+        }
+        writer.push(cmd, final);
         return;
       }
       // Preserve ordering when a drag is immediately followed by pause/next.
-      for (const item of pending.current.values()) {
-        clearTimeout(item.timer);
-        send(item.command);
-      }
-      pending.current.clear();
+      for (const writer of gainWriters.current.values()) writer.flush();
+      gainWriters.current.clear();
       send(cmd);
     },
     [send],
   );
-  const preferences = useCallback((p: Preferences) => {
+  const preferences = useCallback((patch: Partial<Preferences>, final = true) => {
     const b = bridgeRef.current;
     if (!b) return;
-    void b
-      .send({ type: 'preferences', preferences: p }, 'LOCAL')
-      .catch((e) => errorRef.current((e as Error).message));
+    const next = { ...currentPreferences.current, ...patch };
+    if (!validPreferences(next)) return;
+    for (const key of Object.keys(patch) as (keyof Preferences)[])
+      preferenceTargets.current.set(key, { value: next[key], expires: performance.now() + 3000 });
+    currentPreferences.current = next;
+    if (final) setStatus((s) => ({ ...s, preferences: next }));
+    preferenceWriter.current ??= latestThrottle<Preferences>((preferences) => {
+      void b
+        .send({ type: 'preferences', preferences }, 'LOCAL')
+        .catch((e) => errorRef.current((e as Error).message));
+    });
+    preferenceWriter.current.push(next, final);
   }, []);
   const unlock = useCallback(() => {
     void bridgeRef.current?.send({ type: 'unlock' }, 'LOCAL');

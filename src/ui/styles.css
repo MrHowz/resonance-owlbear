@@ -774,6 +774,29 @@ input[type='range']:disabled {
 .is-scrubbing .seek-preview {
   visibility: visible;
 }
+.smooth-slider {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.slider-value {
+  flex: 0 0 32px;
+  text-align: right;
+  font-size: 10px;
+  color: #afc7a1;
+  font-variant-numeric: tabular-nums;
+}
+.smooth-slider .seek-control {
+  min-width: 28px;
+}
+.topbar-right > .mobile-audio-settings {
+  display: none;
+}
+.bus-fader .smooth-slider {
+  flex: 1;
+}
 .library-section,
 .scene-section,
 .session-section {
@@ -1609,8 +1632,8 @@ kbd {
   margin-top: 4px;
   color: #7c9474;
 }
-.monitor-bar > input {
-  max-width: 150px;
+.monitor-bar > .master-slider {
+  max-width: 195px;
 }
 .master-number {
   font-size: 10px;
@@ -1991,8 +2014,8 @@ kbd {
   .monitor-settings span {
     display: none;
   }
-  .monitor-bar > input {
-    max-width: 110px;
+  .monitor-bar > .master-slider {
+    max-width: 155px;
   }
 }
 @media (max-width: 1000px) and (min-width: 761px) {
@@ -2115,6 +2138,11 @@ kbd {
   }
   .topbar-right > .icon-button {
     display: none;
+  }
+  .topbar-right > .mobile-audio-settings {
+    display: inline-flex;
+    width: 25px;
+    height: 29px;
   }
   .preview-notice {
     font-size: 8px;
@@ -2269,8 +2297,8 @@ kbd {
   .monitor-label > span {
     font-size: 7px;
   }
-  .monitor-bar > input {
-    max-width: 100px;
+  .monitor-bar > .master-slider {
+    max-width: 145px;
   }
   .monitor-settings {
     padding: 0;
@@ -2581,8 +2609,8 @@ kbd {
   .monitor-bar > .icon-button {
     width: 25px;
   }
-  .monitor-bar > input {
-    max-width: 75px;
+  .monitor-bar > .master-slider {
+    max-width: 111px;
     flex: 1;
   }
   .monitor-settings {

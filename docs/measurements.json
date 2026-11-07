@@ -1,27 +1,27 @@
 {
-  "measuredAt": "2026-11-07T23:31:47.644Z",
+  "measuredAt": "2026-11-07T23:48:38.367Z",
   "runtime": "v26.13.0",
   "platform": "win32",
   "assets": [
     {
-      "name": "app-DCay86FU.js",
-      "bytes": 322505,
-      "gzipBytes": 101265
+      "name": "app-hCGNwSGh.js",
+      "bytes": 325388,
+      "gzipBytes": 102042
     },
     {
-      "name": "background-mlqcBwyT.js",
+      "name": "background-DrleXQGO.js",
       "bytes": 241,
-      "gzipBytes": 204
+      "gzipBytes": 203
     },
     {
-      "name": "service-DluTUHQe.js",
-      "bytes": 76783,
-      "gzipBytes": 19525
+      "name": "service-Ct--XNCC.js",
+      "bytes": 77080,
+      "gzipBytes": 19622
     }
   ],
   "total": {
-    "bytes": 399529,
-    "gzipBytes": 120994
+    "bytes": 402709,
+    "gzipBytes": 121867
   },
   "baseline": {
     "version": "Tracks 1.8.0",
@@ -30,31 +30,31 @@
   },
   "search": {
     "rows": 10000,
-    "indexMs": 8.98,
+    "indexMs": 9,
     "timings": [
       {
         "query": "forest",
-        "ms": 28.33,
+        "ms": 26.95,
         "matches": 10000
       },
       {
         "query": "tavern",
-        "ms": 17.87,
+        "ms": 18.42,
         "matches": 5000
       },
       {
         "query": "exploration",
-        "ms": 26.58,
+        "ms": 27,
         "matches": 5000
       },
       {
         "query": "mood-4",
-        "ms": 21.05,
+        "ms": 21.76,
         "matches": 10000
       },
       {
         "query": "foret",
-        "ms": 14.5,
+        "ms": 14.29,
         "matches": 5000
       }
     ]

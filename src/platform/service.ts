@@ -29,6 +29,7 @@ export class RoomService {
   private cleanups: (() => void)[] = [];
   private timer?: ReturnType<typeof setInterval>;
   private serial: Promise<void> = Promise.resolve();
+  private queuedGains = new Map<string, { command: Command; sender: string }>();
   private engine: AudioEngine;
   private probes = new Map<string, number>();
   private lastEnded = '';
@@ -207,9 +208,22 @@ export class RoomService {
       this.engine.stopEffects();
   }
   private enqueue(command: Command, sender: string) {
+    const key = command.type === 'gain' ? `${sender}/${command.bus}` : undefined;
+    if (key) {
+      const queued = this.queuedGains.get(key);
+      if (queued) {
+        queued.command = command;
+        return;
+      }
+    } else this.queuedGains.clear(); // Preserve order around play, scene and other commands.
+    const work = { command, sender };
+    if (key) this.queuedGains.set(key, work);
     // Serialize metadata mutations and isolate failures so the next action can still run.
     this.serial = this.serial
-      .then(() => this.execute(command, sender))
+      .then(() => {
+        if (key && this.queuedGains.get(key) === work) this.queuedGains.delete(key);
+        return this.execute(work.command, work.sender);
+      })
       .catch((e) => this.error((e as Error).message));
   }
   private async execute(command: Command, sender: string) {

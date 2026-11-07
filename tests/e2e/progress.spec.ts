@@ -99,7 +99,7 @@ test('drag previews locally through status refreshes, commits once on release, a
   const preview = Number(await slider.inputValue());
   expect(preview).toBeGreaterThan(11);
   expect(preview).toBeLessThan(13);
-  await expect(desk.locator('.seek-preview')).toBeVisible();
+  await expect(desk.locator('.seek-row .seek-preview')).toBeVisible();
   // Force the same local status report a fader/heartbeat would cause during a drag.
   await page.evaluate(() => (window as any).sendAsSelf({ type: 'hello' }));
   await page.waitForTimeout(750);
@@ -117,7 +117,7 @@ test('drag previews locally through status refreshes, commits once on release, a
     () => (window as any).hostData.metadata['app.resonance/transport'].music.position,
   );
   expect(stored).toBeCloseTo(preview, 2);
-  await expect(desk.locator('.seek-preview')).not.toBeVisible();
+  await expect(desk.locator('.seek-row .seek-preview')).not.toBeVisible();
   expect(errors).toEqual([]);
 });
 
