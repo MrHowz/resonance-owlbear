@@ -1,0 +1,50 @@
+{
+  "name": "resonance-owlbear",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check": "npm run build && npm run test && npm run test:e2e",
+    "prebuild": "node scripts/notices.mjs",
+    "format": "prettier --write src tests scripts *.ts *.html *.json docs/*.md README.md",
+    "format:check": "prettier --check src tests scripts *.ts *.html *.json docs/*.md README.md",
+    "measure": "node scripts/measure.mjs",
+    "audio:samples": "node scripts/generate-audio.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@owlbear-rodeo/sdk": "^3.1.0",
+    "fuse.js": "^7.5.0",
+    "idb": "^8.0.4",
+    "lucide-react": "^1.70.0",
+    "papaparse": "^5.7.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@types/node": "^26.6.6",
+    "@types/papaparse": "^5.5.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.2.1",
+    "acorn": "^8.19.0",
+    "fake-indexeddb": "^6.2.7",
+    "prettier": "^3.9.10",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  },
+  "engines": {
+    "node": ">=26"
+  }
+}

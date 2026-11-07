@@ -1,0 +1,36 @@
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 1000;
+  src: url('@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
+.brand-sub {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .track-title {
+    font-size: 12px;
+  }
+  .tag-list button {
+    font-size: 10px;
+  }
+  .filter-tabs > button {
+    font-size: 9px;
+  }
+  .library-footer {
+    font-size: 8px;
+  }
+  .panel-footnote {
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Resonance",
+  "description": "Synchronized music, ambience and sound effects. A focused audio desk for your next adventure.",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "author": "Resonance contributors",
+  "icon": "/icon.svg",
+  "background_url": "/background.html",
+  "action": { "title": "Resonance", "icon": "/action.svg", "popover": "/", "width": 480, "height": 720 },
+  "permissions": [{ "name": "autoplay", "reason": "Play synchronized music and ambience while the audio panel is closed." }]
+}

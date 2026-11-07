@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Owlbear SDK controlled test host</title>
+    <style>
+      body {
+        margin: 0;
+        background: #111617;
+      }
+      #desk {
+        border: 0;
+        width: 100%;
+        height: 100vh;
+      }
+      #background {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // SDK protocol simulator for controlled tests. This is never part of dist/.
+      const params = new URLSearchParams(location.search),
+        original = params.get('original') === '1';
+      const room = params.get('room') || 'test',
+        origin = location.origin,
+        key = `test-obr-${room}`;
+      const self = {
+        id: crypto.randomUUID(),
+        connectionId: crypto.randomUUID(),
+        name: params.get('role') === 'PLAYER' ? 'Listener' : 'Conductor',
+        role: params.get('role') === 'PLAYER' ? 'PLAYER' : 'GM',
+        color: '#aabbcc',
+        syncView: false,
+        metadata: {},
+      };
+      const peers = new Map(),
+        frames = new Map(),
+        channel = new BroadcastChannel(key),
+        log = [];
+      let metadata = JSON.parse(localStorage.getItem(key) || '{}');
+      window.hostData = {
+        get metadata() {
+          return metadata;
+        },
+        self,
+        log,
+        writes: 0,
+        broadcasts: 0,
+      };
+      function emit(frame, id, data) {
+        frame.contentWindow?.postMessage({ id, data }, origin);
+      }
+      function emitAll(id, data) {
+        for (const f of frames.keys()) emit(f, id, data);
+      }
+      function party() {
+        emitAll('OBR_PARTY_EVENT_CHANGE', { players: [...peers.values()] });
+      }
+      function state(update) {
+        metadata = { ...metadata, ...update };
+        localStorage.setItem(key, JSON.stringify(metadata));
+        emitAll('OBR_ROOM_METADATA_EVENT_CHANGE', { metadata });
+      }
+      channel.onmessage = (e) => {
+        const m = e.data;
+        if (m.kind === 'hello') {
+          const fresh = !peers.has(m.self.connectionId);
+          peers.set(m.self.connectionId, m.self);
+          party();
+          if (fresh) channel.postMessage({ kind: 'hello', self });
+        }
+        if (m.kind === 'bye') {
+          peers.delete(m.id);
+          party();
+        }
+        if (m.kind === 'state') state(m.update);
+        if (m.kind === 'broadcast')
+          emitAll(`OBR_BROADCAST_MESSAGE_${m.channel}`, { data: m.data, connectionId: m.sender });
+      };
+      channel.postMessage({ kind: 'hello', self });
+      window.addEventListener('pagehide', () =>
+        channel.postMessage({ kind: 'bye', id: self.connectionId }),
+      );
+      window.addEventListener('message', (e) => {
+        if (e.origin !== origin) return;
+        const entry = [...frames].find(([f]) => f.contentWindow === e.source);
+        if (!entry) return;
+        const [f] = entry,
+          m = e.data;
+        if (!m || typeof m.id !== 'string') return;
+        log.push({ id: m.id, data: m.data });
+        let data = {};
+        switch (m.id) {
+          case 'OBR_PLAYER_GET_ROLE':
+            data = { role: self.role };
+            break;
+          case 'OBR_PLAYER_GET_NAME':
+            data = { name: self.name };
+            break;
+          case 'OBR_PLAYER_GET_CONNECTION_ID':
+            data = { connectionId: self.connectionId };
+            break;
+          case 'OBR_PLAYER_GET_ID':
+            data = { id: self.id };
+            break;
+          case 'OBR_PLAYER_GET_COLOR':
+            data = { color: self.color };
+            break;
+          case 'OBR_PLAYER_GET_METADATA':
+            data = { metadata: {} };
+            break;
+          case 'OBR_PARTY_GET_PLAYERS':
+            data = { players: [...peers.values()] };
+            break;
+          case 'OBR_ROOM_GET_METADATA':
+            data = { metadata };
+            break;
+          case 'OBR_ROOM_GET_PERMISSIONS':
+            data = { permissions: [] };
+            break;
+          case 'OBR_THEME_GET_THEME':
+            data = {
+              theme: {
+                mode: 'DARK',
+                primary: {
+                  light: '#c4dfb5',
+                  main: '#a9c997',
+                  dark: '#829d71',
+                  contrastText: '#142010',
+                },
+                secondary: {
+                  light: '#a0c0a8',
+                  main: '#829d8a',
+                  dark: '#627a69',
+                  contrastText: '#17231b',
+                },
+                background: { default: '#111617', paper: '#1a2121' },
+                text: { primary: '#d7e6ce', secondary: '#9faf95', disabled: '#6a7f60' },
+              },
+            };
+            break;
+          case 'OBR_SCENE_IS_READY':
+            data = { ready: false };
+            break;
+          case 'OBR_ROOM_SET_METADATA':
+            window.hostData.writes++;
+            state(m.data.update);
+            channel.postMessage({ kind: 'state', update: m.data.update });
+            break;
+          case 'OBR_BROADCAST_SEND_MESSAGE': {
+            window.hostData.broadcasts++;
+            const { channel: ch, data: d, options } = m.data,
+              destination = options?.destination || 'REMOTE';
+            if (destination !== 'REMOTE')
+              emitAll(`OBR_BROADCAST_MESSAGE_${ch}`, { data: d, connectionId: self.connectionId });
+            if (destination !== 'LOCAL')
+              channel.postMessage({
+                kind: 'broadcast',
+                channel: ch,
+                data: d,
+                sender: self.connectionId,
+              });
+            break;
+          }
+        }
+        if (m.nonce) emit(f, `${m.id}_RESPONSE${m.nonce}`, data);
+      });
+      function mount(id, path) {
+        const frame = document.createElement('iframe');
+        frame.id = id;
+        frame.allow = 'autoplay';
+        frames.set(frame, {});
+        frame.addEventListener('load', () =>
+          emit(frame, 'OBR_READY', { ref: `test-${id}`, userId: self.id }),
+        );
+        frame.src = `${path}?obrref=${encodeURIComponent(btoa(`${origin} ${room}`))}`;
+        document.body.append(frame);
+        return frame;
+      }
+      if (!original) mount('background', '/background.html');
+      mount('desk', original ? '/original/' : '/');
+      // Expose only the simulator's network boundary for permission tests.
+      window.sendAsSelf = (data) => {
+        emitAll('OBR_BROADCAST_MESSAGE_app.resonance/v1', {
+          data,
+          connectionId: self.connectionId,
+        });
+        channel.postMessage({
+          kind: 'broadcast',
+          channel: 'app.resonance/v1',
+          data,
+          sender: self.connectionId,
+        });
+      };
+      window.hideDesk = () => document.getElementById('desk').remove();
+      window.showDesk = () => mount('desk', '/');
+    </script>
+  </body>
+</html>

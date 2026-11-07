@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-08",
+  "timezone": "Asia/Bangkok",
+  "build": "passed: TypeScript and Vite production build",
+  "unitTests": { "passed": 30, "failed": 0, "files": 5 },
+  "browserTests": {
+    "passed": 2,
+    "failed": 0,
+    "runtime": "installed Google Chrome on Windows",
+    "covers": [
+      "library CRUD/import/backup/search",
+      "queue and scene recall",
+      "320/375/480px overflow",
+      "actual SDK action/background iframe protocol",
+      "GM and late-joining listener",
+      "role spoof rejection",
+      "personal volume isolation",
+      "playback and crossfade cleanup after action iframe removal"
+    ]
+  },
+  "format": "passed: Prettier",
+  "dependencyAudit": "0 reported vulnerabilities with uuid 11.1.1 override",
+  "notVerified": [
+    "live Owlbear backend",
+    "public deployment",
+    "Safari/Firefox/iOS",
+    "all audio hosting providers/codecs",
+    "sample-accurate sync",
+    "cross-device CPU/RAM speedup versus original Tracks"
+  ]
+}
